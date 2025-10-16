@@ -1,0 +1,3 @@
+exit
+apt update
+exit
