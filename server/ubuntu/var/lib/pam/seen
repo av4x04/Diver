@@ -1,4 +1,2 @@
 unix
-systemd
 mkhomedir
-capability

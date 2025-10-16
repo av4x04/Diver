@@ -1,6 +1,6 @@
-b593d74c4bec0fddc8072bf659f4ac6a  usr/lib/x86_64-linux-gnu/libtasn1.so.6.6.0
-bb8e73177911b0b4b0570cbacac54f88  usr/share/doc/libtasn1-6/AUTHORS
-8e395bf236961233c674eeeda1089d8f  usr/share/doc/libtasn1-6/README.md
-d439f7c88a54c316cc7f4e9020bb7d24  usr/share/doc/libtasn1-6/THANKS
-30c88c784615dfe6ff115c06d62b5ad9  usr/share/doc/libtasn1-6/changelog.Debian.gz
-7774a07ae2a65728f781a76f24a893f2  usr/share/doc/libtasn1-6/copyright
+908edb918a5bf96cc2a86b9d938cd5ca  usr/lib/x86_64-linux-gnu/libtasn1.so.6.6.3
+8aa4286eea1e272e2128ba2e2bc2f647  usr/share/doc/libtasn1-6/AUTHORS
+db98678a7b974bf76a30e8a326105272  usr/share/doc/libtasn1-6/README.md
+014331d03e85268dc7e8a07b8b944f63  usr/share/doc/libtasn1-6/THANKS
+1d01dbd7dc6e2eeea0f0d638006f0793  usr/share/doc/libtasn1-6/changelog.Debian.gz
+6be74a5c1b602b9eb0c9fbffceb24194  usr/share/doc/libtasn1-6/copyright

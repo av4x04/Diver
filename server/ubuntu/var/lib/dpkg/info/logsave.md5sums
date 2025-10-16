@@ -1,4 +1,4 @@
-e3fee18487a2708462744639d7ddc8d9  sbin/logsave
-32c9eb71a1b4d12cf9a839ae18afcad1  usr/share/doc/logsave/changelog.Debian.gz
-7c3e79fb1dc42838b81614695b02be5b  usr/share/doc/logsave/copyright
-63fbf6e1b45c63c4a6be6ab2cee21821  usr/share/man/man8/logsave.8.gz
+331f51730a12548c1907e1267dd80570  usr/sbin/logsave
+6e2a54a5755d78d493ebe195f10832bf  usr/share/doc/logsave/changelog.Debian.gz
+1310ed8edd8d42af06394a2c050f9c8c  usr/share/doc/logsave/copyright
+9bce00b2f861028e0ef2cea1e6ff6d95  usr/share/man/man8/logsave.8.gz

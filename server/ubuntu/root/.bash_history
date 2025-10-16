@@ -1,3 +1,0 @@
-exit
-apt update
-exit

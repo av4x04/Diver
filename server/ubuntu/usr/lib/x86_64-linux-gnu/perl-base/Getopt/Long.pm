@@ -4,12 +4,14 @@
 # Author          : Johan Vromans
 # Created On      : Tue Sep 11 15:00:12 1990
 # Last Modified By: Johan Vromans
-# Last Modified On: Sat May 27 12:11:39 2017
-# Update Count    : 1715
+# Last Modified On: Thu Nov 17 17:45:27 2022
+# Update Count    : 1777
 # Status          : Released
 
 ################ Module Preamble ################
 
+# There are no CPAN testers for very old versions of Perl.
+# Getopt::Long is reported to run under 5.8.
 use 5.004;
 
 use strict;
@@ -18,10 +20,10 @@ use warnings;
 package Getopt::Long;
 
 use vars qw($VERSION);
-$VERSION        =  2.50;
+$VERSION        =  2.54;
 # For testing versions only.
 use vars qw($VERSION_STRING);
-$VERSION_STRING = "2.50";
+$VERSION_STRING = "2.54";
 
 use Exporter;
 use vars qw(@ISA @EXPORT @EXPORT_OK);
@@ -258,9 +260,9 @@ use constant PAT_XINT  =>
   ")";
 use constant PAT_FLOAT =>
   "[-+]?".			# optional sign
-  "(?=[0-9.])".			# must start with digit or dec.point
+  "(?=\\.?[0-9])".		# must start with digit or dec.point
   "[0-9_]*".			# digits before the dec.point
-  "(\.[0-9_]+)?".		# optional fraction
+  "(\\.[0-9_]*)?".		# optional fraction
   "([eE][-+]?[0-9_]+)?";	# optional exponent
 
 sub GetOptions(@) {
@@ -303,7 +305,7 @@ sub GetOptionsFromArray(@) {
 	# Avoid some warnings if debugging.
 	local ($^W) = 0;
 	print STDERR
-	  ("Getopt::Long $Getopt::Long::VERSION ",
+	  ("Getopt::Long $Getopt::Long::VERSION_STRING ",
 	   "called from package \"$pkg\".",
 	   "\n  ",
 	   "argv: ",
@@ -525,8 +527,9 @@ sub GetOptionsFromArray(@) {
 	my $key;		# key (if hash type)
 	my $arg;		# option argument
 	my $ctl;		# the opctl entry
+	my $starter;		# the actual starter character(s)
 
-	($found, $opt, $ctl, $arg, $key) =
+	($found, $opt, $ctl, $starter, $arg, $key) =
 	  FindOption ($argv, $prefix, $argend, $opt, \%opctl);
 
 	if ( $found ) {
@@ -538,6 +541,7 @@ sub GetOptionsFromArray(@) {
 	    while ( defined $arg ) {
 
 		# Get the canonical name.
+		my $given = $opt;
 		print STDERR ("=> cname for \"$opt\" is ") if $debug;
 		$opt = $ctl->[CTL_CNAME];
 		print STDERR ("\"$ctl->[CTL_CNAME]\"\n") if $debug;
@@ -605,11 +609,13 @@ sub GetOptionsFromArray(@) {
 			    eval {
 				&{$linkage{$opt}}
 				  (Getopt::Long::CallBack->new
-				   (name    => $opt,
-				    ctl     => $ctl,
-				    opctl   => \%opctl,
-				    linkage => \%linkage,
-				    prefix  => $prefix,
+				   (name     => $opt,
+				    given    => $given,
+				    ctl      => $ctl,
+				    opctl    => \%opctl,
+				    linkage  => \%linkage,
+				    prefix   => $prefix,
+				    starter  => $starter,
 				   ),
 				   $ctl->[CTL_DEST] == CTL_DEST_HASH ? ($key) : (),
 				   $arg);
@@ -769,7 +775,7 @@ sub GetOptionsFromArray(@) {
     }
 
     # Finish.
-    if ( @ret && $order == $PERMUTE ) {
+    if ( @ret && ( $order == $PERMUTE || $passthrough ) ) {
 	#  Push back accumulated arguments
 	print STDERR ("=> restoring \"", join('" "', @ret), "\"\n")
 	    if $debug;
@@ -805,10 +811,8 @@ sub ParseOptionSpec ($$) {
 		   (
 		     # Option name
 		     (?: \w+[-\w]* )
-		     # Alias names, or "?"
-		     (?: \| (?: \? | \w[-\w]* ) )*
 		     # Aliases
-		     (?: \| (?: [^-|!+=:][^|!+=:]* )? )*
+		     (?: \| (?: . [^|!+=:]* )? )*
 		   )?
 		   (
 		     # Either modifiers ...
@@ -818,7 +822,7 @@ sub ParseOptionSpec ($$) {
 		     [=:] [ionfs] [@%]? (?: \{\d*,?\d*\} )?
 		     |
 		     # ... or an optional-with-default spec
-		     : (?: -?\d+ | \+ ) [@%]?
+		     : (?: 0[0-7]+ | 0[xX][0-9a-fA-F]+ | 0[bB][01]+ | -?\d+ | \+ ) [@%]?
 		   )?
 		   $;x ) {
 	return (undef, "Error in option spec: \"$opt\"\n");
@@ -851,10 +855,23 @@ sub ParseOptionSpec ($$) {
 	# Fields are hard-wired here.
 	$entry = [$spec,$orig,undef,CTL_DEST_SCALAR,0,0];
     }
-    elsif ( $spec =~ /^:(-?\d+|\+)([@%])?$/ ) {
+    elsif ( $spec =~ /^:(0[0-7]+|0x[0-9a-f]+|0b[01]+|-?\d+|\+)([@%])?$/i ) {
 	my $def = $1;
 	my $dest = $2;
-	my $type = $def eq '+' ? 'I' : 'i';
+	my $type = 'i';		# assume integer
+	if ( $def eq '+' ) {
+	    # Increment.
+	    $type = 'I';
+	}
+	elsif ( $def =~ /^(0[0-7]+|0[xX][0-9a-fA-F]+|0[bB][01]+)$/ ) {
+	    # Octal, binary or hex.
+	    $type = 'o';
+	    $def = oct($def);
+	}
+	elsif ( $def =~ /^-?\d+$/ ) {
+	    # Integer.
+	    $def = 0 + $def;
+	}
 	$dest ||= '$';
 	$dest = $dest eq '@' ? CTL_DEST_ARRAY
 	  : $dest eq '%' ? CTL_DEST_HASH : CTL_DEST_SCALAR;
@@ -923,7 +940,7 @@ sub ParseOptionSpec ($$) {
 # Option lookup.
 sub FindOption ($$$$$) {
 
-    # returns (1, $opt, $ctl, $arg, $key) if okay,
+    # returns (1, $opt, $ctl, $starter, $arg, $key) if okay,
     # returns (1, undef) if option in error,
     # returns (0) otherwise.
 
@@ -1104,7 +1121,7 @@ sub FindOption ($$$$$) {
 	    $arg = 0;		# supply explicit value
 	}
 	unshift (@$argv, $starter.$rest) if defined $rest;
-	return (1, $opt, $ctl, $arg);
+	return (1, $opt, $ctl, $starter, $arg);
     }
 
     # Get mandatory status and type info.
@@ -1127,15 +1144,15 @@ sub FindOption ($$$$$) {
 		# Fake incremental type.
 		my @c = @$ctl;
 		$c[CTL_TYPE] = '+';
-		return (1, $opt, \@c, 1);
+		return (1, $opt, \@c, $starter, 1);
 	    }
 	    my $val
 	      = defined($ctl->[CTL_DEFAULT]) ? $ctl->[CTL_DEFAULT]
 	      : $type eq 's'                 ? ''
 	      :                                0;
-	    return (1, $opt, $ctl, $val);
+	    return (1, $opt, $ctl, $starter, $val);
 	}
-	return (1, $opt, $ctl, $type eq 's' ? '' : 0)
+	return (1, $opt, $ctl, $starter, $type eq 's' ? '' : 0)
 	  if $optargtype == 1;  # --foo=  -> return nothing
     }
 
@@ -1145,7 +1162,7 @@ sub FindOption ($$$$$) {
 	 : !(defined $rest || @$argv > 0) ) {
 	# Complain if this option needs an argument.
 #	if ( $mand && !($type eq 's' ? defined($optarg) : 0) ) {
-	if ( $mand ) {
+	if ( $mand || $ctl->[CTL_DEST] == CTL_DEST_HASH ) {
 	    return (0) if $passthrough;
 	    warn ("Option ", $opt, " requires an argument\n");
 	    $error++;
@@ -1155,9 +1172,9 @@ sub FindOption ($$$$$) {
 	    # Fake incremental type.
 	    my @c = @$ctl;
 	    $c[CTL_TYPE] = '+';
-	    return (1, $opt, \@c, 1);
+	    return (1, $opt, \@c, $starter, 1);
 	}
-	return (1, $opt, $ctl,
+	return (1, $opt, $ctl, $starter,
 		defined($ctl->[CTL_DEFAULT]) ? $ctl->[CTL_DEFAULT] :
 		$type eq 's' ? '' : 0);
     }
@@ -1187,16 +1204,16 @@ sub FindOption ($$$$$) {
 
     if ( $type eq 's' ) {	# string
 	# A mandatory string takes anything.
-	return (1, $opt, $ctl, $arg, $key) if $mand;
+	return (1, $opt, $ctl, $starter, $arg, $key) if $mand;
 
 	# Same for optional string as a hash value
-	return (1, $opt, $ctl, $arg, $key)
+	return (1, $opt, $ctl, $starter, $arg, $key)
 	  if $ctl->[CTL_DEST] == CTL_DEST_HASH;
 
 	# An optional string takes almost anything.
-	return (1, $opt, $ctl, $arg, $key)
+	return (1, $opt, $ctl, $starter, $arg, $key)
 	  if defined $optarg || defined $rest;
-	return (1, $opt, $ctl, $arg, $key) if $arg eq "-"; # ??
+	return (1, $opt, $ctl, $starter, $arg, $key) if $arg eq "-"; # ??
 
 	# Check for option or option list terminator.
 	if ($arg eq $argend ||
@@ -1248,7 +1265,7 @@ sub FindOption ($$$$$) {
 		    # Fake incremental type.
 		    my @c = @$ctl;
 		    $c[CTL_TYPE] = '+';
-		    return (1, $opt, \@c, 1);
+		    return (1, $opt, \@c, $starter, 1);
 		}
 		# Supply default value.
 		$arg = defined($ctl->[CTL_DEFAULT]) ? $ctl->[CTL_DEFAULT] : 0;
@@ -1293,7 +1310,7 @@ sub FindOption ($$$$$) {
     else {
 	die("Getopt::Long internal error (Can't happen)\n");
     }
-    return (1, $opt, $ctl, $arg, $key);
+    return (1, $opt, $ctl, $starter, $arg, $key);
 }
 
 sub ValidValue ($$$$$) {
@@ -1529,8 +1546,9 @@ sub setup_pa_args($@) {
 
     if ( UNIVERSAL::isa($pa, 'HASH') ) {
 	# Get rid of -msg vs. -message ambiguity.
-	$pa->{-message} = $pa->{-msg};
-	delete($pa->{-msg});
+	if (!defined $pa->{-message}) {
+	    $pa->{-message} = delete($pa->{-msg});
+	}
     }
     elsif ( $pa =~ /^-?\d+$/ ) {
 	$pa = { -exitval => $pa };
@@ -1547,7 +1565,7 @@ sub setup_pa_args($@) {
 
 # Sneak way to know what version the user requested.
 sub VERSION {
-    $requested_version = $_[1];
+    $requested_version = $_[1] if @_ > 1;
     shift->SUPER::VERSION(@_);
 }
 
@@ -1561,6 +1579,11 @@ sub new {
 sub name {
     my $self = shift;
     ''.$self->{name};
+}
+
+sub given {
+    my $self = shift;
+    $self->{given};
 }
 
 use overload

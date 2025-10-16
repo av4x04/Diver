@@ -27,7 +27,6 @@ operator:x:37:
 list:x:38:
 irc:x:39:
 src:x:40:
-gnats:x:41:
 shadow:x:42:
 utmp:x:43:
 video:x:44:
@@ -37,9 +36,3 @@ staff:x:50:
 games:x:60:
 users:x:100:
 nogroup:x:65534:
-systemd-timesync:x:101:
-systemd-journal:x:102:
-systemd-network:x:103:
-systemd-resolve:x:104:
-messagebus:x:105:
-ssh:x:106:

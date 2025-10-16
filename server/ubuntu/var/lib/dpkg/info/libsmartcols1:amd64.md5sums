@@ -1,3 +1,4 @@
-fe9343648ed64801cb3d4913d0fa680c  lib/x86_64-linux-gnu/libsmartcols.so.1.1.0
-d3e481f598ec16a7754d28bc21e4719e  usr/share/doc/libsmartcols1/changelog.Debian.gz
-d5aa93a766c58a08be0158132a7505b9  usr/share/doc/libsmartcols1/copyright
+0b86ac1f1cdea331dad942ebdd0e42ab  usr/lib/x86_64-linux-gnu/libsmartcols.so.1.1.0
+627fd89e6d646a5db63f21d05eb32b2e  usr/share/doc/libsmartcols1/changelog.Debian.gz
+4e3ed275af9c214606341bc158e7acf4  usr/share/doc/libsmartcols1/copyright
+b676ef2a4facbfe24f0881daaeea89e8  usr/share/lintian/overrides/libsmartcols1
